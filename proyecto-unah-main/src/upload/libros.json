@@ -1,0 +1,32 @@
+{
+    "libros": [
+        {
+            "id": "LIBRO_000002",
+            "titulo": "Gerencia",
+            "autor": "Sofia Rivera",
+            "temas": "Gerencia informática",
+            "archivo": "1751982586_Desarrollo-de-Habilidades-Directivas_TEST.pdf",
+            "nombre_original": "Desarrollo-de-Habilidades-Directivas_TEST.pdf",
+            "tamano": 70095,
+            "fecha_subida": "2025-07-08 13:49:46",
+            "fecha_creacion": "2025-07-08 13:49:46",
+            "estado": "activo"
+        },
+        {
+            "id": "LIBRO_000003",
+            "titulo": "Monos",
+            "autor": "Juan Perez",
+            "temas": "Biología",
+            "archivo": "1751984938_Desarrollo-de-Habilidades-Directivas_resultados.pdf",
+            "nombre_original": "Desarrollo-de-Habilidades-Directivas_resultados.pdf",
+            "tamano": 84736,
+            "fecha_subida": "2025-07-08 14:28:58",
+            "fecha_creacion": "2025-07-08 14:28:58",
+            "estado": "activo"
+        }
+    ],
+    "ultimo_id": 4,
+    "fecha_creacion": "2025-07-08 13:15:29",
+    "total_libros": 2,
+    "ultima_actualizacion": "2025-07-08 16:06:49"
+}
