@@ -1,6 +1,5 @@
 # estructura de carpetas
 
-![imagen](https://github.com/user-attachments/assets/f1ef1400-19b0-4e20-a03c-037265397676)
-
+![imagen](https://github.com/user-attachments/assets/4c13b912-3a65-449e-bef3-8741e494395e)
 
 
