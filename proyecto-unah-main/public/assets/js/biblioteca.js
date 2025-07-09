@@ -1,3 +1,10 @@
+// Variables globales para paginación
+let libros = [];
+let librosFiltrados = [];
+let paginaActual = 1;
+const resultadosPorPagina = 4; // Mostrar solo 4 libros por página
+let seHaBuscado = false;
+
 // Funciones para el modal de la biblioteca (scope global)
 window.abrirModalAgregar = function() {
     const modal = document.getElementById('modal-libro');
@@ -20,6 +27,8 @@ window.abrirModalAgregar = function() {
         if (window.updateTemasHidden) window.updateTemasHidden();
         if (window.renderChips) window.renderChips();
     }
+    // Marcar como modo agregar
+    form.dataset.modo = 'agregar';
     // Mostrar el modal
     modal.classList.remove('modal-oculto');
 };
@@ -44,6 +53,8 @@ window.abrirModalEditar = function() {
         if (window.renderChips) window.renderChips();
     }
     
+    // Marcar como modo editar
+    form.dataset.modo = 'editar';
     // Mostrar el modal
     modal.classList.remove('modal-oculto');
 };
@@ -71,6 +82,7 @@ window.eliminarLibro = function(idLibro) {
                 alert('Libro eliminado exitosamente: ' + data.message);
                 // Aquí podrías recargar la lista de libros
                 console.log('Libro eliminado:', data.libro_eliminado);
+                cargarLibros(); // Actualizar la lista automáticamente
             } else {
                 alert('Error al eliminar el libro: ' + data.error);
             }
@@ -126,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const autor = formData.get('autor').trim();
             const temas = formData.get('temas').trim();
             const archivo = formData.get('archivo');
+            const modo = formLibro.dataset.modo || 'agregar';
             
             // Validar título
             if (titulo.length < 5 || titulo.length > 70) {
@@ -176,23 +189,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Validar que se haya seleccionado un archivo
-            if (!archivo || archivo.size === 0) {
-                alert('Por favor, selecciona un archivo para subir.');
-                return;
-            }
-            
-            // Validar el tipo de archivo - solo PDF
-            if (archivo.type !== 'application/pdf') {
-                alert('Por favor, selecciona solo archivos PDF.');
-                return;
-            }
-            
-            // Validar también la extensión del archivo
-            const extension = archivo.name.split('.').pop().toLowerCase();
-            if (extension !== 'pdf') {
-                alert('Por favor, selecciona solo archivos con extensión .pdf');
-                return;
+            // Validar archivo solo en modo agregar
+            if (modo === 'agregar') {
+                if (!archivo || archivo.size === 0) {
+                    alert('Por favor, selecciona un archivo para subir.');
+                    return;
+                }
+                
+                // Validar el tipo de archivo - solo PDF
+                if (archivo.type !== 'application/pdf') {
+                    alert('Por favor, selecciona solo archivos PDF.');
+                    return;
+                }
+                
+                // Validar también la extensión del archivo
+                const extension = archivo.name.split('.').pop().toLowerCase();
+                if (extension !== 'pdf') {
+                    alert('Por favor, selecciona solo archivos con extensión .pdf');
+                    return;
+                }
             }
             
             // Crear FormData para enviar al servidor
@@ -200,11 +215,27 @@ document.addEventListener('DOMContentLoaded', function() {
             formDataToSend.append('titulo', titulo);
             formDataToSend.append('autor', autor);
             formDataToSend.append('temas', temas);
-            formDataToSend.append('archivo', archivo);
+            formDataToSend.append('modo', modo);
+            
+            // Agregar ID del libro si es modo editar
+            if (modo === 'editar') {
+                const libroId = formLibro.dataset.libroId;
+                if (libroId) {
+                    formDataToSend.append('id', libroId);
+                }
+            }
+            
+            // Agregar archivo solo si es modo agregar
+            if (modo === 'agregar' && archivo) {
+                formDataToSend.append('archivo', archivo);
+            }
+            
+            // Determinar endpoint según el modo
+            const endpoint = modo === 'editar' ? '/src/services/biblioteca/editarLibro.php' : '/src/services/biblioteca/guardarLibro.php';
             
             // Enviar datos al servidor
-            console.log('Enviando datos al servidor...');
-            fetch('/src/services/biblioteca/guardarLibro.php', {
+            console.log('Enviando datos al servidor...', modo);
+            fetch(endpoint, {
                 method: 'POST',
                 body: formDataToSend
             })
@@ -222,14 +253,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 return data;
             })
             .then(data => {
-                alert('Libro guardado exitosamente: ' + data.message);
-                console.log('Libro guardado:', data.libro);
-                cerrarModal();
-                cargarLibros();
+                const mensaje = modo === 'editar' ? 'Libro editado exitosamente' : 'Libro guardado exitosamente';
+                alert(mensaje + ': ' + data.message);
+                console.log('Libro procesado:', data.libro);
+                cargarLibros(); // Actualizar la lista automáticamente
+                cerrarModal(); // Cerrar el modal después de guardar
             })
             .catch(error => {
                 console.error('Error detallado:', error);
-                alert('Error al guardar el libro: ' + error.message);
+                alert('Error al procesar el libro: ' + error.message);
             });
         });
     }
@@ -303,42 +335,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Función para cargar y renderizar la lista de libros
 window.cargarLibros = function() {
-    const contenedor = document.getElementById('contenedor-resultados');
-    contenedor.innerHTML = '<div class="text-center">Cargando libros...</div>';
     fetch('/src/services/biblioteca/listarLibros.php')
         .then(response => response.json())
         .then(data => {
-            if (!data.success || !Array.isArray(data.libros)) {
-                contenedor.innerHTML = '<div class="text-danger">No se pudieron cargar los libros.</div>';
-                return;
+            if (data.success && Array.isArray(data.libros)) {
+                libros = data.libros;
+                if (data.libros.length === 0) {
+                    document.getElementById('contenedor-resultados').innerHTML = '<div class="text-muted">No hay libros registrados.</div>';
+                } else {
+                    // Mostrar todos los libros sin búsqueda
+                    seHaBuscado = true;
+                    librosFiltrados = [...libros];
+                    paginaActual = 1;
+                    mostrarLibrosPaginados();
+                }
+            } else {
+                document.getElementById('contenedor-resultados').innerHTML = '<div class="text-danger">No se pudieron cargar los libros.</div>';
             }
-            if (data.libros.length === 0) {
-                contenedor.innerHTML = '<div class="text-muted">No hay libros registrados.</div>';
-                return;
-            }
-            // Renderizar como lista
-            let html = '<ul class="list-group">';
-            data.libros.forEach(libro => {
-                html += `
-                <li class="list-group-item d-flex justify-content-between align-items-start flex-wrap">
-                    <div style="flex:1; min-width:200px;">
-                        <div><strong>${libro.titulo}</strong></div>
-                        <div><span class="text-secondary">Autor:</span> ${libro.autor}</div>
-                        <div><span class="text-secondary">Temas:</span> ${libro.temas}</div>
-                        <!-- ID oculto visualmente, pero disponible en JS -->
-                        <!--<div style="display:none;"><span class="text-secondary">ID:</span> <span class="badge bg-info text-dark">${libro.id}</span></div>-->
-                    </div>
-                    <div class="acciones-libro d-flex gap-2">
-                        <button class="btn btn-sm btn-primary" onclick="abrirModalEditarLibro('${libro.id}')">Editar</button>
-                        <button class="btn btn-sm btn-danger" onclick="eliminarLibro('${libro.id}')">Eliminar</button>
-                    </div>
-                </li>`;
-            });
-            html += '</ul>';
-            contenedor.innerHTML = html;
         })
         .catch(error => {
-            contenedor.innerHTML = '<div class="text-danger">Error al cargar los libros.</div>';
+            document.getElementById('contenedor-resultados').innerHTML = '<div class="text-danger">Error al cargar los libros.</div>';
             console.error('Error al cargar libros:', error);
         });
 };
@@ -363,6 +379,8 @@ window.abrirModalEditarLibro = function(idLibro) {
             modalTitulo.textContent = 'Editar Libro';
             form.titulo.value = libro.titulo;
             form.autor.value = libro.autor;
+            // Guardar el ID del libro para la edición
+            form.dataset.libroId = libro.id;
             // Temas (chips)
             if (window.temasArray) {
                 window.temasArray = libro.temas.split(',').map(t => t.trim()).filter(Boolean);
@@ -378,6 +396,8 @@ window.abrirModalEditarLibro = function(idLibro) {
             if (archivoEditHelp) archivoEditHelp.style.display = 'block';
             // Limpiar archivo (no se puede editar el archivo en HTML por seguridad)
             form.archivo.value = '';
+            // Marcar como modo editar
+            form.dataset.modo = 'editar';
             // Mostrar el modal
             modal.classList.remove('modal-oculto');
         });
@@ -385,82 +405,176 @@ window.abrirModalEditarLibro = function(idLibro) {
 
 // Función para cargar y renderizar la lista de libros filtrados por búsqueda
 window.buscarLibros = function() {
-    const contenedor = document.getElementById('contenedor-resultados');
     const inputBusqueda = document.getElementById('busqueda');
     const selectFiltro = document.getElementById('catalogo');
     const termino = (inputBusqueda ? inputBusqueda.value.trim().toLowerCase() : '');
     const filtro = (selectFiltro ? selectFiltro.value.toLowerCase() : '');
-    contenedor.innerHTML = '<div class="text-center">Buscando libros...</div>';
-    fetch('/src/services/biblioteca/listarLibros.php')
-        .then(response => response.json())
-        .then(data => {
-            if (!data.success || !Array.isArray(data.libros)) {
-                contenedor.innerHTML = '<div class="text-danger">No se pudieron cargar los libros.</div>';
-                return;
-            }
-            // Filtrar libros por término de búsqueda y filtro seleccionado
-            let resultados = data.libros;
-            if (termino) {
-                resultados = data.libros.filter(libro => {
-                    if (filtro === 'autor') {
-                        return libro.autor.toLowerCase().includes(termino);
-                    } else if (filtro === 'tema') {
-                        return libro.temas.toLowerCase().includes(termino);
-                    } else if (filtro === 'catálogo de biblioteca' || filtro === '' || filtro === 'todos') {
-                        // Búsqueda general
-                        return (
-                            libro.titulo.toLowerCase().includes(termino) ||
-                            libro.autor.toLowerCase().includes(termino) ||
-                            libro.temas.toLowerCase().includes(termino)
-                        );
-                    } else {
-                        // Por defecto, búsqueda general
-                        return (
-                            libro.titulo.toLowerCase().includes(termino) ||
-                            libro.autor.toLowerCase().includes(termino) ||
-                            libro.temas.toLowerCase().includes(termino)
-                        );
-                    }
-                });
-            }
-            if (resultados.length === 0) {
-                contenedor.innerHTML = '<div class="text-muted">No se encontraron resultados.</div>';
-                return;
-            }
-            // Renderizar como lista
-            let html = '<ul class="list-group">';
-            resultados.forEach(libro => {
-                html += `
-                <li class="list-group-item d-flex justify-content-between align-items-start flex-wrap">
-                    <div style="flex:1; min-width:200px;">
-                        <div><strong>${libro.titulo}</strong></div>
-                        <div><span class="text-secondary">Autor:</span> ${libro.autor}</div>
-                        <div><span class="text-secondary">Temas:</span> ${libro.temas}</div>
-                    </div>
-                    <div class="acciones-libro d-flex gap-2">
-                        <button class="btn btn-sm btn-primary" onclick="abrirModalEditarLibro('${libro.id}')">Editar</button>
-                        <button class="btn btn-sm btn-danger" onclick="eliminarLibro('${libro.id}')">Eliminar</button>
-                    </div>
-                </li>`;
+    
+    // Cargar todos los libros si no se han cargado aún
+    if (libros.length === 0) {
+        fetch('/src/services/biblioteca/listarLibros.php')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.libros)) {
+                    libros = data.libros;
+                    procesarBusqueda(termino, filtro);
+                } else {
+                    document.getElementById('contenedor-resultados').innerHTML = '<div class="text-danger">No se pudieron cargar los libros.</div>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('contenedor-resultados').innerHTML = '<div class="text-danger">Error al cargar libros.</div>';
+                console.error('Error al cargar libros:', error);
             });
-            html += '</ul>';
-            contenedor.innerHTML = html;
-        })
-        .catch(error => {
-            contenedor.innerHTML = '<div class="text-danger">Error al buscar libros.</div>';
-            console.error('Error al buscar libros:', error);
-        });
+    } else {
+        procesarBusqueda(termino, filtro);
+    }
 };
 
-// Al cargar la página, la lista está vacía
+function procesarBusqueda(termino, filtro) {
+    seHaBuscado = true;
+    paginaActual = 1;
+    
+    // Filtrar libros por término de búsqueda y filtro seleccionado
+    if (termino) {
+        librosFiltrados = libros.filter(libro => {
+            if (filtro === 'autor') {
+                return libro.autor.toLowerCase().includes(termino);
+            } else if (filtro === 'tema') {
+                return libro.temas.toLowerCase().includes(termino);
+            } else if (filtro === 'catálogo de biblioteca' || filtro === '' || filtro === 'todos') {
+                // Búsqueda general
+                return (
+                    libro.titulo.toLowerCase().includes(termino) ||
+                    libro.autor.toLowerCase().includes(termino) ||
+                    libro.temas.toLowerCase().includes(termino)
+                );
+            } else {
+                // Por defecto, búsqueda general
+                return (
+                    libro.titulo.toLowerCase().includes(termino) ||
+                    libro.autor.toLowerCase().includes(termino) ||
+                    libro.temas.toLowerCase().includes(termino)
+                );
+            }
+        });
+    } else {
+        // Si no hay término de búsqueda, mostrar todos los libros
+        librosFiltrados = [...libros];
+    }
+    
+    mostrarLibrosPaginados();
+}
+
+// Funciones de paginación
+window.paginaAnterior = function() {
+    if (paginaActual > 1) {
+        paginaActual--;
+        mostrarLibrosPaginados();
+    }
+};
+
+window.paginaSiguiente = function() {
+    const totalPaginas = Math.ceil(librosFiltrados.length / resultadosPorPagina);
+    if (paginaActual < totalPaginas) {
+        paginaActual++;
+        mostrarLibrosPaginados();
+    }
+};
+
+function mostrarLibrosPaginados() {
+    const contenedor = document.getElementById('contenedor-resultados');
+    const paginacion = document.getElementById('paginacion');
+    const paginaActualSpan = document.getElementById('pagina-actual');
+    
+    if (!seHaBuscado || librosFiltrados.length === 0) {
+        contenedor.innerHTML = '<div class="text-muted">Utiliza la barra de búsqueda para ver resultados.</div>';
+        paginacion.style.display = 'none';
+        return;
+    }
+    
+    // Calcular paginación
+    const totalPaginas = Math.ceil(librosFiltrados.length / resultadosPorPagina);
+    if (paginaActual > totalPaginas) paginaActual = 1;
+    
+    const inicio = (paginaActual - 1) * resultadosPorPagina;
+    const fin = inicio + resultadosPorPagina;
+    const librosPagina = librosFiltrados.slice(inicio, fin);
+    
+    // Renderizar libros de la página actual
+    let html = '<ul class="list-group">';
+    librosPagina.forEach(libro => {
+        html += `
+        <li class="list-group-item d-flex justify-content-between align-items-start flex-wrap">
+            <div style="flex:1; min-width:200px;">
+                <div><strong><a href="http://localhost:8000/api/visualizarPdf.php?archivo=${libro.archivo}" target="_blank" class="text-decoration-none text-primary">${libro.titulo}</a></strong></div>
+                <div><span class="text-secondary">Autor:</span> ${libro.autor}</div>
+                <div><span class="text-secondary">Temas:</span> ${libro.temas}</div>
+            </div>
+            <div class="acciones-libro d-flex gap-2">
+                <button class="btn btn-sm btn-primary" onclick="abrirModalEditarLibro('${libro.id}')">Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="eliminarLibro('${libro.id}')">Eliminar</button>
+            </div>
+        </li>`;
+    });
+    html += '</ul>';
+    contenedor.innerHTML = html;
+    
+    // Actualizar controles de paginación
+    if (paginaActualSpan) {
+        paginaActualSpan.textContent = paginaActual;
+    }
+    
+    // Mostrar/ocultar botones de paginación
+    const btnAnterior = paginacion.querySelector('button:first-child');
+    const btnSiguiente = paginacion.querySelector('button:last-child');
+    
+    if (btnAnterior) {
+        btnAnterior.disabled = paginaActual === 1;
+    }
+    if (btnSiguiente) {
+        btnSiguiente.disabled = paginaActual === totalPaginas;
+    }
+    
+    // Mostrar información de paginación
+    if (totalPaginas > 1) {
+        paginacion.style.display = 'flex';
+        // Agregar información de páginas si no existe
+        if (!paginacion.querySelector('.info-paginas')) {
+            const infoPaginas = document.createElement('span');
+            infoPaginas.className = 'info-paginas mx-2';
+            infoPaginas.textContent = `Página ${paginaActual} de ${totalPaginas} (${librosFiltrados.length} libros)`;
+            paginacion.insertBefore(infoPaginas, btnSiguiente);
+        } else {
+            paginacion.querySelector('.info-paginas').textContent = `Página ${paginaActual} de ${totalPaginas} (${librosFiltrados.length} libros)`;
+        }
+    } else {
+        paginacion.style.display = 'none';
+    }
+}
+
+// Al cargar la página, cargar todos los libros
 window.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('contenedor-resultados').innerHTML = '<div class="text-muted">Utiliza la barra de búsqueda para ver resultados.</div>';
+    // Cargar todos los libros al inicio
+    cargarLibros();
+    
     // Asignar evento al botón "Ir"
     const btnIr = document.querySelector('.buscador-btn');
     if (btnIr) {
         btnIr.addEventListener('click', function(e) {
             e.preventDefault();
             buscarLibros();
+        });
+    }
+    
+    // Asignar evento Enter al campo de búsqueda
+    const inputBusqueda = document.getElementById('busqueda');
+    if (inputBusqueda) {
+        inputBusqueda.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarLibros();
+            }
         });
     }
 });

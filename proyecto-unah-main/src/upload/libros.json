@@ -2,31 +2,82 @@
     "libros": [
         {
             "id": "LIBRO_000002",
-            "titulo": "Gerencia",
-            "autor": "Sofia Rivera",
+            "titulo": "Gerencia Informática",
+            "autor": "L. López",
             "temas": "Gerencia informática",
             "archivo": "1751982586_Desarrollo-de-Habilidades-Directivas_TEST.pdf",
             "nombre_original": "Desarrollo-de-Habilidades-Directivas_TEST.pdf",
             "tamano": 70095,
             "fecha_subida": "2025-07-08 13:49:46",
             "fecha_creacion": "2025-07-08 13:49:46",
-            "estado": "activo"
+            "estado": "activo",
+            "fecha_modificacion": "2025-07-09 05:40:39"
         },
         {
             "id": "LIBRO_000003",
-            "titulo": "Monos",
+            "titulo": "PHP y más",
             "autor": "Juan Perez",
-            "temas": "Biología",
+            "temas": "Programación, PHP",
             "archivo": "1751984938_Desarrollo-de-Habilidades-Directivas_resultados.pdf",
             "nombre_original": "Desarrollo-de-Habilidades-Directivas_resultados.pdf",
             "tamano": 84736,
             "fecha_subida": "2025-07-08 14:28:58",
             "fecha_creacion": "2025-07-08 14:28:58",
+            "estado": "activo",
+            "fecha_modificacion": "2025-07-09 05:23:11"
+        },
+        {
+            "id": "LIBRO_000005",
+            "titulo": "MySQL",
+            "autor": "E. Maradiaga",
+            "temas": "sql, Programación",
+            "archivo": "1752038650_Plan-de-Estudios-Ingenieria-en-Sistemas.pdf",
+            "nombre_original": "Plan-de-Estudios-Ingenieria-en-Sistemas.pdf",
+            "tamano": 780830,
+            "fecha_subida": "2025-07-09 05:24:10",
+            "fecha_creacion": "2025-07-09 05:24:10",
+            "estado": "activo",
+            "fecha_modificacion": "2025-07-09 05:24:46"
+        },
+        {
+            "id": "LIBRO_000006",
+            "titulo": "Informática Forence",
+            "autor": "M. Montero",
+            "temas": "Fisica",
+            "archivo": "1752039830_certificadoCCSTCISCO.pdf",
+            "nombre_original": "certificado CCST CISCO.pdf",
+            "tamano": 144812,
+            "fecha_subida": "2025-07-09 05:43:50",
+            "fecha_creacion": "2025-07-09 05:43:50",
+            "estado": "activo"
+        },
+        {
+            "id": "LIBRO_000007",
+            "titulo": "Libro nuevo",
+            "autor": "R. Ramirez",
+            "temas": "Geología, Ciencias de la Tierra",
+            "archivo": "1752039879_NotasUnidadI-1300IIP-2025BASEDEDATOSII.pdf",
+            "nombre_original": "Notas Unidad I - 1300 II P-2025 BASE DE DATOS II.pdf",
+            "tamano": 120204,
+            "fecha_subida": "2025-07-09 05:44:39",
+            "fecha_creacion": "2025-07-09 05:44:39",
+            "estado": "activo"
+        },
+        {
+            "id": "LIBRO_000009",
+            "titulo": "Segunda página",
+            "autor": "D. Galeas",
+            "temas": "Biologia, Ciencias naturales",
+            "archivo": "1752039956_CdigosdeExcepcionesenOracle.pdf",
+            "nombre_original": "Códigos de Excepciones en Oracle.pdf",
+            "tamano": 291504,
+            "fecha_subida": "2025-07-09 05:45:56",
+            "fecha_creacion": "2025-07-09 05:45:56",
             "estado": "activo"
         }
     ],
-    "ultimo_id": 4,
+    "ultimo_id": 10,
     "fecha_creacion": "2025-07-08 13:15:29",
-    "total_libros": 2,
-    "ultima_actualizacion": "2025-07-08 16:06:49"
+    "total_libros": 6,
+    "ultima_actualizacion": "2025-07-09 06:06:28"
 }
